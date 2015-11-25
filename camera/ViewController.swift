@@ -86,10 +86,17 @@ class ViewController: UIViewController {
         }
     }
 
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        if let vc = segue.destinationViewController as? ImageViewController,
+            image = sender as? UIImage {
+                vc.image = image
+        }
+    }
+
     // MARK: - @IBActions
 
-    @IBAction func changeFlashMode(sender: UIButton)
-    {
+    @IBAction func changeFlashMode(sender: UIButton) {
+        
         switch (cameraManager.changeFlashMode()) {
         case .Off:
             sender.setTitle("Flash Off", forState: UIControlState.Normal)
@@ -105,13 +112,7 @@ class ViewController: UIViewController {
         switch (cameraManager.cameraOutputMode) {
         case .StillImage:
             cameraManager.capturePictureWithCompletition({ (image, error) -> Void in
-                let vc: ImageViewController? = self.storyboard?.instantiateViewControllerWithIdentifier("ImageVC") as? ImageViewController
-                if let validVC: ImageViewController = vc {
-                    if let capturedImage = image {
-                        validVC.image = capturedImage
-                        self.navigationController?.pushViewController(validVC, animated: true)
-                    }
-                }
+                self.performSegueWithIdentifier("SeeImage", sender: image)
             })
         case .VideoWithMic, .VideoOnly:
             sender.selected = !sender.selected
