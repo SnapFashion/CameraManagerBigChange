@@ -751,19 +751,20 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
 
         if let validLibrary = library {
             if writeFilesToPhoneLibrary {
-                validLibrary.saveImage(<#T##image: UIImage##UIImage#>, toAlbum: <#T##String#>, withCompletionHandler: <#T##(Bool, NSError?) -> Void#>)
+                validLibrary.saveVideo()
 
 
-                validLibrary.writeVideoAtPathToSavedPhotosAlbum(outputFileURL, completionBlock: { (assetURL: NSURL?, error: NSError?) -> Void in
-                    if (error != nil) {
-                        self._show(NSLocalizedString("Unable to save video to the iPhone.", comment:""), message: error!.localizedDescription)
-                        self._executeVideoCompletionWithURL(nil, error: error)
-                    } else {
-                        if let validAssetURL = assetURL {
-                            self._executeVideoCompletionWithURL(validAssetURL, error: error)
-                        }
-                    }
-                })
+
+//                validLibrary.writeVideoAtPathToSavedPhotosAlbum(outputFileURL, completionBlock: { (assetURL: NSURL?, error: NSError?) -> Void in
+//                    if (error != nil) {
+//                        self._show(NSLocalizedString("Unable to save video to the iPhone.", comment:""), message: error!.localizedDescription)
+//                        self._executeVideoCompletionWithURL(nil, error: error)
+//                    } else {
+//                        if let validAssetURL = assetURL {
+//                            self._executeVideoCompletionWithURL(validAssetURL, error: error)
+//                        }
+//                    }
+//                })
             } else {
                 _executeVideoCompletionWithURL(outputFileURL, error: error)
             }

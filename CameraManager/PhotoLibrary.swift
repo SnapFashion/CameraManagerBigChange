@@ -12,7 +12,9 @@ class PhotoLibrary {
     func saveImage(image: UIImage, toAlbum albumName: String, withCompletionHandler handler: (Bool,NSError?) -> Void) {
         let assetCollection = getAssetCollectionByName(albumName)
 
-        if assetCollection == nil {
+        if let assetCollection = assetCollection {
+            self.addAsset(image, toCollection: assetCollection, withCompletionHandler: handler)
+        } else {
             var placeholderCollection: PHObjectPlaceholder!
             PHPhotoLibrary.sharedPhotoLibrary().performChanges({ () -> Void in
                 placeholderCollection = self.createAlbum(albumName)
@@ -22,13 +24,18 @@ class PhotoLibrary {
                         self.addAsset(image, toCollection: assetCollection.firstObject as! PHAssetCollection, withCompletionHandler: handler)
                     }
             })
-        } else {
-            self.addAsset(image, toCollection: assetCollection, withCompletionHandler: handler)
         }
     }
-    func getAssetCollectionByName(albumName: String) -> PHAssetCollection! {
+    func saveVideo() {
+        PHPhotoLibrary.sharedPhotoLibrary().performChanges({ () -> Void in
+
+        }) { success, error in
+
+        }
+    }
+    private func getAssetCollectionByName(albumName: String) -> PHAssetCollection? {
         let assetCollection: PHFetchResult = PHAssetCollection.fetchAssetCollectionsWithType(.Album, subtype: .AlbumRegular, options: nil)
-        var outCollection: PHAssetCollection! = nil
+        var outCollection: PHAssetCollection?
         assetCollection.enumerateObjectsUsingBlock {
             (collection: AnyObject!, idx: Int, stop: UnsafeMutablePointer<ObjCBool>) -> Void in
             let assetCollection: PHAssetCollection = collection as! PHAssetCollection
@@ -45,11 +52,15 @@ class PhotoLibrary {
         return newAssetCollection.placeholderForCreatedAssetCollection
     }
 
+    private func addVideo(videoURL: NSURL) {
+        PHAssetChangeRequest.creationRequestForAssetFromVideoAtFileURL(videoURL)
+    }
+
     private func addAsset(image: UIImage, toCollection collection: PHAssetCollection, withCompletionHandler handler: (Bool,NSError?) -> Void) {
         PHPhotoLibrary.sharedPhotoLibrary().performChanges({ () -> Void in
             let assetRequest = PHAssetChangeRequest.creationRequestForAssetFromImage(image)
             let assetCollectionRequest = PHAssetCollectionChangeRequest(forAssetCollection: collection)
             assetCollectionRequest!.addAssets([assetRequest.placeholderForCreatedAsset!])
-            }, completionHandler: handler)
+        }, completionHandler: handler)
     }
 }
