@@ -171,6 +171,7 @@
                         <outlet property="cameraButton" destination="FSo-n8-ZwV" id="ITk-de-2LY"/>
                         <outlet property="cameraView" destination="EI2-CK-oqA" id="bUS-Rk-omr"/>
                         <outlet property="flashModeButton" destination="19j-xT-Ttb" id="hjy-cj-bcm"/>
+                        <segue destination="xF2-bQ-3ri" kind="show" identifier="SeeImage" id="aEh-qJ-Wu8"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
@@ -209,7 +210,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="caE-Sy-maH" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1460" y="97"/>
+            <point key="canvasLocation" x="1460" y="102"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="s7F-c8-PK8">

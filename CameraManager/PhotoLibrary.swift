@@ -18,11 +18,11 @@ class PhotoLibrary {
             var placeholderCollection: PHObjectPlaceholder!
             PHPhotoLibrary.sharedPhotoLibrary().performChanges({ () -> Void in
                 placeholderCollection = self.createAlbum(albumName)
-                }, completionHandler: { (success: Bool, error: NSError?) -> Void in
-                    if success {
-                        let assetCollection = PHAssetCollection.fetchAssetCollectionsWithLocalIdentifiers([placeholderCollection.localIdentifier], options: nil)
-                        self.addAsset(image, toCollection: assetCollection.firstObject as! PHAssetCollection, withCompletionHandler: handler)
-                    }
+            }, completionHandler: { (success: Bool, error: NSError?) -> Void in
+                if success {
+                    let assetCollection = PHAssetCollection.fetchAssetCollectionsWithLocalIdentifiers([placeholderCollection.localIdentifier], options: nil)
+                    self.addAsset(image, toCollection: assetCollection.firstObject as! PHAssetCollection, withCompletionHandler: handler)
+                }
             })
         }
     }

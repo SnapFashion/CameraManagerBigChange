@@ -57,6 +57,9 @@ public class CameraManager: NSObject {
     /// Property to determine if manager should write the resources to the phone library. Default value is true.
     public var writeFilesToPhoneLibrary = true
 
+    /// Property for album title
+    public var albumTitle: String?
+
     /// The Bool property to determine if current device has front camera.
     public var hasFrontCamera: Bool = {
         let devices = AVCaptureDevice.devicesWithMediaType(AVMediaTypeVideo)
@@ -79,7 +82,7 @@ public class CameraManager: NSObject {
             }
         }
         return false
-        }()
+    }()
     
     /// Property to change camera device between front and back.
     public var cameraDevice = CameraDevice.Back {
@@ -278,6 +281,11 @@ public class CameraManager: NSObject {
             if cameraOutputMode == .StillImage {
                 dispatch_async(sessionQueue, {
                     self._getStillImageOutput().captureStillImageAsynchronouslyFromConnection(self._getStillImageOutput().connectionWithMediaType(AVMediaTypeVideo), completionHandler: { [weak self] (sample: CMSampleBuffer!, error: NSError!) -> Void in
+                        var imageData: NSData!
+                        defer {
+                            imageCompletion(UIImage(data: imageData), error)
+                        }
+
                         guard error == nil
                             else {
                                 dispatch_async(dispatch_get_main_queue(), {
@@ -285,30 +293,20 @@ public class CameraManager: NSObject {
                                         weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
                                     }
                                 })
-                                imageCompletion(nil, error)
                                 return
                             }
-
-
-                        let imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sample)
-                        defer {
-                            imageCompletion(UIImage(data: imageData), nil)
-                        }
-                        guard let weakSelf = self
+                        imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sample)
+                        guard let weakSelf = self,
+                            validLibrary = weakSelf.library where weakSelf.writeFilesToPhoneLibrary
                             else { return }
 
-
-                        if let validLibrary = weakSelf.library where weakSelf.writeFilesToPhoneLibrary {
-                            validLibrary.saveImage(UIImage(data: imageData)!, toAlbum: "Test Album") { (complete, error) -> Void in
-                                if let error = error {
-                                    dispatch_async(dispatch_get_main_queue(), {
-                                        weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
-                                    })
-                                }
+                        validLibrary.saveImage(UIImage(data: imageData)!, toAlbum: weakSelf.albumTitle!) { (complete, error) -> Void in
+                            if let error = error {
+                                dispatch_async(dispatch_get_main_queue(), {
+                                    weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
+                                })
                             }
                         }
-
-
                     })
                 })
             } else {
