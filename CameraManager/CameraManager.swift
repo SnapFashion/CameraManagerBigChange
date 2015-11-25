@@ -8,7 +8,6 @@
 
 import UIKit
 import AVFoundation
-import AssetsLibrary
 
 public enum CameraState {
     case Ready, AccessDenied, NoDeviceFound, NotDetermined
@@ -31,7 +30,7 @@ public enum CameraOutputQuality: Int {
 }
 
 /// Class for handling iDevices custom camera usage
-public class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate {
+public class CameraManager: NSObject {
 
     // MARK: - Public properties
     
@@ -68,7 +67,7 @@ public class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate {
             }
         }
         return false
-        }()
+    }()
     
     /// The Bool property to determine if current device has flash.
     public var hasFlash: Bool = {
@@ -130,7 +129,7 @@ public class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate {
     private weak var embedingView: UIView?
     private var videoCompletion: ((videoURL: NSURL?, error: NSError?) -> Void)?
 
-    private var sessionQueue: dispatch_queue_t = dispatch_queue_create("CameraSessionQueue", DISPATCH_QUEUE_SERIAL)
+    private var sessionQueue = dispatch_queue_create("CameraSessionQueue", DISPATCH_QUEUE_SERIAL)
 
     private lazy var frontCameraDevice: AVCaptureDevice? = {
         let devices = AVCaptureDevice.devicesWithMediaType(AVMediaTypeVideo) as! [AVCaptureDevice]
@@ -149,7 +148,7 @@ public class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate {
     private var stillImageOutput: AVCaptureStillImageOutput?
     private var movieOutput: AVCaptureMovieFileOutput?
     private var previewLayer: AVCaptureVideoPreviewLayer?
-    private var library: ALAssetsLibrary?
+    private var library: PhotoLibrary?
 
     private var cameraIsSetup = false
     private var cameraIsObservingDeviceOrientation = false
@@ -162,7 +161,7 @@ public class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate {
             } catch { }
         }
         return NSURL(string: tempPath)!
-        }()
+    }()
     
     
     // MARK: - CameraManager
@@ -279,31 +278,37 @@ public class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate {
             if cameraOutputMode == .StillImage {
                 dispatch_async(sessionQueue, {
                     self._getStillImageOutput().captureStillImageAsynchronouslyFromConnection(self._getStillImageOutput().connectionWithMediaType(AVMediaTypeVideo), completionHandler: { [weak self] (sample: CMSampleBuffer!, error: NSError!) -> Void in
-                        if (error != nil) {
-                            dispatch_async(dispatch_get_main_queue(), {
-                                if let weakSelf = self {
-                                    weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
-                                }
-                            })
-                            imageCompletion(nil, error)
-                        } else {
-                            let imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sample)
-                            if let weakSelf = self {
-                                if weakSelf.writeFilesToPhoneLibrary {
-                                    if let validLibrary = weakSelf.library {
-                                        validLibrary.writeImageDataToSavedPhotosAlbum(imageData, metadata:nil, completionBlock: {
-                                            (picUrl, error) -> Void in
-                                            if (error != nil) {
-                                                dispatch_async(dispatch_get_main_queue(), {
-                                                    weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
-                                                })
-                                            }
-                                        })
+                        guard error == nil
+                            else {
+                                dispatch_async(dispatch_get_main_queue(), {
+                                    if let weakSelf = self {
+                                        weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
                                     }
-                                }
+                                })
+                                imageCompletion(nil, error)
+                                return
                             }
+
+
+                        let imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sample)
+                        defer {
                             imageCompletion(UIImage(data: imageData), nil)
                         }
+                        guard let weakSelf = self
+                            else { return }
+
+
+                        if let validLibrary = weakSelf.library where weakSelf.writeFilesToPhoneLibrary {
+                            validLibrary.saveImage(UIImage(data: imageData)!, toAlbum: "Test Album") { (complete, error) -> Void in
+                                if let error = error {
+                                    dispatch_async(dispatch_get_main_queue(), {
+                                        weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
+                                    })
+                                }
+                            }
+                        }
+
+
                     })
                 })
             } else {
@@ -364,40 +369,6 @@ public class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate {
     public func changeQualityMode() -> CameraOutputQuality {
         cameraOutputQuality = CameraOutputQuality(rawValue: (cameraOutputQuality.rawValue+1)%3)!
         return cameraOutputQuality
-    }
-    
-    // MARK: - AVCaptureFileOutputRecordingDelegate
-
-    public func captureOutput(captureOutput: AVCaptureFileOutput!, didStartRecordingToOutputFileAtURL fileURL: NSURL!, fromConnections connections: [AnyObject]!) {
-        captureSession?.beginConfiguration()
-        if flashMode != .Off {
-            _updateTorch(flashMode)
-        }
-        captureSession?.commitConfiguration()
-    }
-
-    public func captureOutput(captureOutput: AVCaptureFileOutput!, didFinishRecordingToOutputFileAtURL outputFileURL: NSURL!, fromConnections connections: [AnyObject]!, error: NSError!) {
-        _updateTorch(.Off)
-        if (error != nil) {
-            _show(NSLocalizedString("Unable to save video to the iPhone", comment:""), message: error.localizedDescription)
-        } else {
-            if let validLibrary = library {
-                if writeFilesToPhoneLibrary {
-                    validLibrary.writeVideoAtPathToSavedPhotosAlbum(outputFileURL, completionBlock: { (assetURL: NSURL?, error: NSError?) -> Void in
-                        if (error != nil) {
-                            self._show(NSLocalizedString("Unable to save video to the iPhone.", comment:""), message: error!.localizedDescription)
-                            self._executeVideoCompletionWithURL(nil, error: error)
-                        } else {
-                            if let validAssetURL = assetURL {
-                                self._executeVideoCompletionWithURL(validAssetURL, error: error)
-                            }
-                        }
-                    })
-                } else {
-                    _executeVideoCompletionWithURL(outputFileURL, error: error)
-                }
-            }
-        }
     }
 
     // MARK: - CameraManager()
@@ -628,7 +599,7 @@ public class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate {
             movieOutput = AVCaptureMovieFileOutput()
         }
         if library == nil {
-            library = ALAssetsLibrary()
+            library = PhotoLibrary()
         }
     }
 
@@ -700,11 +671,11 @@ public class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate {
         if let validCaptureSession = captureSession {
             var sessionPreset = AVCaptureSessionPresetLow
             switch (newCameraOutputQuality) {
-            case CameraOutputQuality.Low:
+            case .Low:
                 sessionPreset = AVCaptureSessionPresetLow
-            case CameraOutputQuality.Medium:
+            case .Medium:
                 sessionPreset = AVCaptureSessionPresetMedium
-            case CameraOutputQuality.High:
+            case .High:
                 if cameraOutputMode == .StillImage {
                     sessionPreset = AVCaptureSessionPresetPhoto
                 } else {
@@ -757,5 +728,45 @@ public class CameraManager: NSObject, AVCaptureFileOutputRecordingDelegate {
     deinit {
         stopAndRemoveCaptureSession()
         _stopFollowingDeviceOrientation()
+    }
+}
+
+// MARK: - AVCaptureFileOutputRecordingDelegate
+extension CameraManager: AVCaptureFileOutputRecordingDelegate {
+    public func captureOutput(captureOutput: AVCaptureFileOutput!, didStartRecordingToOutputFileAtURL fileURL: NSURL!, fromConnections connections: [AnyObject]!) {
+        captureSession?.beginConfiguration()
+        if flashMode != .Off {
+            _updateTorch(flashMode)
+        }
+        captureSession?.commitConfiguration()
+    }
+
+    public func captureOutput(captureOutput: AVCaptureFileOutput!, didFinishRecordingToOutputFileAtURL outputFileURL: NSURL!, fromConnections connections: [AnyObject]!, error: NSError!) {
+        _updateTorch(.Off)
+        guard error == nil
+            else {
+                _show(NSLocalizedString("Unable to save video to the iPhone", comment:""), message: error.localizedDescription)
+                return
+            }
+
+        if let validLibrary = library {
+            if writeFilesToPhoneLibrary {
+                validLibrary.saveImage(<#T##image: UIImage##UIImage#>, toAlbum: <#T##String#>, withCompletionHandler: <#T##(Bool, NSError?) -> Void#>)
+
+
+                validLibrary.writeVideoAtPathToSavedPhotosAlbum(outputFileURL, completionBlock: { (assetURL: NSURL?, error: NSError?) -> Void in
+                    if (error != nil) {
+                        self._show(NSLocalizedString("Unable to save video to the iPhone.", comment:""), message: error!.localizedDescription)
+                        self._executeVideoCompletionWithURL(nil, error: error)
+                    } else {
+                        if let validAssetURL = assetURL {
+                            self._executeVideoCompletionWithURL(validAssetURL, error: error)
+                        }
+                    }
+                })
+            } else {
+                _executeVideoCompletionWithURL(outputFileURL, error: error)
+            }
+        }
     }
 }
