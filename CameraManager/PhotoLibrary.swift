@@ -8,31 +8,37 @@
 
 import Photos
 
-class PhotoLibrary {
-    func saveImage(image: UIImage, toAlbum albumName: String, withCompletionHandler handler: (Bool,NSError?) -> Void) {
-        let assetCollection = getAssetCollectionByName(albumName)
+typealias CompletionHandler = (Bool,NSError?) -> Void
 
-        if let assetCollection = assetCollection {
-            self.addAsset(image, toCollection: assetCollection, withCompletionHandler: handler)
+class PhotoLibrary {
+    func saveImage(image: UIImage?, toAlbum albumName: String, withCompletionHandler handler: (AnyObject, NSError?) -> Void) {
+        guard let img = image
+            else { return }
+        saveItem(img, toAlbum: albumName, withCompletionHandler: handler)
+    }
+
+    func saveVideo(videoURL: NSURL?, toAlbum albumName: String, withCompletionHandler handler: (AnyObject, NSError?) -> Void) {
+        guard let url = videoURL
+            else { return }
+        saveItem(url, toAlbum: albumName) { (asset, error) -> Void in
+            PHImageManager.defaultManager().requestAVAssetForVideo(asset as! PHAsset, options: nil, resultHandler: { (videoAsset, mix, info) -> Void in
+                handler(videoAsset!, nil)
+            })
+        }
+    }
+
+    private func saveItem(object: AnyObject, toAlbum albumName: String, withCompletionHandler handler: (AnyObject, NSError?) -> Void) {
+        if let assetCollection = getAssetCollectionByName(albumName) {
+            self.addAsset(object, toCollection: assetCollection, withCompletionHandler: handler)
         } else {
-            var placeholderCollection: PHObjectPlaceholder!
-            PHPhotoLibrary.sharedPhotoLibrary().performChanges({ () -> Void in
-                placeholderCollection = self.createAlbum(albumName)
-            }, completionHandler: { (success: Bool, error: NSError?) -> Void in
-                if success {
-                    let assetCollection = PHAssetCollection.fetchAssetCollectionsWithLocalIdentifiers([placeholderCollection.localIdentifier], options: nil)
-                    self.addAsset(image, toCollection: assetCollection.firstObject as! PHAssetCollection, withCompletionHandler: handler)
+            createAlbum(albumName, completion: { (fetchResult, error) -> Void in
+                if let fetchResult = fetchResult {
+                    self.addAsset(object, toCollection: fetchResult.firstObject as! PHAssetCollection, withCompletionHandler: handler)
                 }
             })
         }
     }
-    func saveVideo() {
-        PHPhotoLibrary.sharedPhotoLibrary().performChanges({ () -> Void in
 
-        }) { success, error in
-
-        }
-    }
     private func getAssetCollectionByName(albumName: String) -> PHAssetCollection? {
         let assetCollection: PHFetchResult = PHAssetCollection.fetchAssetCollectionsWithType(.Album, subtype: .AlbumRegular, options: nil)
         var outCollection: PHAssetCollection?
@@ -47,20 +53,37 @@ class PhotoLibrary {
         return outCollection
     }
 
-    private func createAlbum(albumName: String) -> PHObjectPlaceholder {
-        let newAssetCollection = PHAssetCollectionChangeRequest.creationRequestForAssetCollectionWithTitle(albumName)
-        return newAssetCollection.placeholderForCreatedAssetCollection
-    }
-
-    private func addVideo(videoURL: NSURL) {
-        PHAssetChangeRequest.creationRequestForAssetFromVideoAtFileURL(videoURL)
-    }
-
-    private func addAsset(image: UIImage, toCollection collection: PHAssetCollection, withCompletionHandler handler: (Bool,NSError?) -> Void) {
+    private func createAlbum(albumName: String, completion: (PHFetchResult?, NSError?) -> Void) {
+        var collectionPlaceHolder: PHObjectPlaceholder?
         PHPhotoLibrary.sharedPhotoLibrary().performChanges({ () -> Void in
-            let assetRequest = PHAssetChangeRequest.creationRequestForAssetFromImage(image)
+            let newAssetCollection = PHAssetCollectionChangeRequest.creationRequestForAssetCollectionWithTitle(albumName)
+            collectionPlaceHolder = newAssetCollection.placeholderForCreatedAssetCollection
+        }) { success, error in
+            let assetCollection = PHAssetCollection.fetchAssetCollectionsWithLocalIdentifiers([collectionPlaceHolder!.localIdentifier], options: nil)
+            completion(assetCollection, error)
+        }
+    }
+
+    private func assetType(asset: AnyObject) -> PHAssetChangeRequest? {
+        if let image = asset as? UIImage {
+            return PHAssetChangeRequest.creationRequestForAssetFromImage(image)
+        } else if let videoURL = asset as? NSURL {
+            return PHAssetChangeRequest.creationRequestForAssetFromVideoAtFileURL(videoURL)
+        }
+        return nil
+    }
+
+    private func addAsset(asset: AnyObject, toCollection collection: PHAssetCollection, withCompletionHandler handler: (PHAsset, NSError?) -> Void) {
+        var assetRequest: PHObjectPlaceholder!
+        PHPhotoLibrary.sharedPhotoLibrary().performChanges({ () -> Void in
+            assetRequest = self.assetType(asset)!.placeholderForCreatedAsset
             let assetCollectionRequest = PHAssetCollectionChangeRequest(forAssetCollection: collection)
-            assetCollectionRequest!.addAssets([assetRequest.placeholderForCreatedAsset!])
-        }, completionHandler: handler)
+            assetCollectionRequest!.addAssets([assetRequest])
+        }) { success, error -> Void in
+            if success {
+                let fetchResult = PHAsset.fetchAssetsWithLocalIdentifiers([assetRequest.localIdentifier], options: nil)
+                handler(fetchResult.firstObject as! PHAsset, nil)
+            }
+        }
     }
 }

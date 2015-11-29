@@ -111,7 +111,7 @@ class ViewController: UIViewController {
         
         switch (cameraManager.cameraOutputMode) {
         case .StillImage:
-            cameraManager.capturePictureWithCompletition({ (image, error) -> Void in
+            cameraManager.capturePictureWithCompletion({ (image, error) -> Void in
                 self.performSegueWithIdentifier("SeeImage", sender: image)
             })
         case .VideoWithMic, .VideoOnly:

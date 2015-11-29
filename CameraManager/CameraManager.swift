@@ -43,9 +43,8 @@ public class CameraManager: NSObject {
     /// Property to determine if the manager should show the camera permission popup immediatly when it's needed or you want to show it manually. Default value is true. Be carful cause using the camera requires permission, if you set this value to false and don't ask manually you won't be able to use the camera.
     public var showAccessPermissionPopupAutomatically = true
     
-    /// A block creating UI to present error message to the user. This can be customised to be presented on the Window root view controller, or to pass in the viewController which will present the UIAlertController, for example.
+    /// A closure creating UI to present error message to the user. This can be customised to be presented on the Window root view controller, or to pass in the viewController which will present the UIAlertController, for example.
     public var showErrorBlock:(erTitle: String, erMessage: String) -> Void = { (erTitle: String, erMessage: String) -> Void in
-        
 //        var alertController = UIAlertController(title: erTitle, message: erMessage, preferredStyle: .Alert)
 //        alertController.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.Default, handler: { (alertAction) -> Void in  }))
 //        
@@ -58,7 +57,7 @@ public class CameraManager: NSObject {
     public var writeFilesToPhoneLibrary = true
 
     /// Property for album title
-    public var albumTitle: String?
+    public var albumTitle: String? = "super test2"
 
     /// The Bool property to determine if current device has front camera.
     public var hasFrontCamera: Bool = {
@@ -129,7 +128,7 @@ public class CameraManager: NSObject {
     
     // MARK: - Private properties
 
-    private weak var embedingView: UIView?
+    private weak var embeddingView: UIView?
     private var videoCompletion: ((videoURL: NSURL?, error: NSError?) -> Void)?
 
     private var sessionQueue = dispatch_queue_create("CameraSessionQueue", DISPATCH_QUEUE_SERIAL)
@@ -182,7 +181,7 @@ public class CameraManager: NSObject {
     }
     public func addPreviewLayerToView(view: UIView, newCameraOutputMode: CameraOutputMode) -> CameraState {
         if _canLoadCamera() {
-            if let _ = embedingView {
+            if let _ = embeddingView {
                 if let validPreviewLayer = previewLayer {
                     validPreviewLayer.removeFromSuperlayer()
                 }
@@ -246,7 +245,7 @@ public class CameraManager: NSObject {
                     stopAndRemoveCaptureSession()
                 }
                 _setupCamera({Void -> Void in
-                    if let validEmbedingView = self.embedingView {
+                    if let validEmbedingView = self.embeddingView {
                         self._addPreeviewLayerToView(validEmbedingView)
                     }
                     self._startFollowingDeviceOrientation()
@@ -277,44 +276,47 @@ public class CameraManager: NSObject {
     :param: imageCompletion Completion block containing the captured UIImage
     */
     public func capturePictureWithCompletion(imageCompletion: (UIImage?, NSError?) -> Void) {
-        if cameraIsSetup {
-            if cameraOutputMode == .StillImage {
-                dispatch_async(sessionQueue, {
-                    self._getStillImageOutput().captureStillImageAsynchronouslyFromConnection(self._getStillImageOutput().connectionWithMediaType(AVMediaTypeVideo), completionHandler: { [weak self] (sample: CMSampleBuffer!, error: NSError!) -> Void in
-                        var imageData: NSData!
-                        defer {
-                            imageCompletion(UIImage(data: imageData), error)
-                        }
+        guard cameraIsSetup
+            else {
+                _show(NSLocalizedString("No capture session setup", comment:""), message: NSLocalizedString("I can't take any picture", comment:""))
+                return
+            }
+        guard cameraOutputMode == .StillImage
+            else {
+                _show(NSLocalizedString("Capture session output mode video", comment:""), message: NSLocalizedString("I can't take any picture", comment:""))
+                return
+            }
 
-                        guard error == nil
-                            else {
-                                dispatch_async(dispatch_get_main_queue(), {
-                                    if let weakSelf = self {
-                                        weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
-                                    }
-                                })
-                                return
-                            }
-                        imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sample)
-                        guard let weakSelf = self,
-                            validLibrary = weakSelf.library where weakSelf.writeFilesToPhoneLibrary
-                            else { return }
+        dispatch_async(sessionQueue, {
+            self._getStillImageOutput().captureStillImageAsynchronouslyFromConnection(self._getStillImageOutput().connectionWithMediaType(AVMediaTypeVideo)) { [weak self] (sample: CMSampleBuffer!, error: NSError!) -> Void in
+            var imageData: NSData!
+            defer {
+                imageCompletion(UIImage(data: imageData), error)
+            }
 
-                        validLibrary.saveImage(UIImage(data: imageData)!, toAlbum: weakSelf.albumTitle!) { (complete, error) -> Void in
-                            if let error = error {
-                                dispatch_async(dispatch_get_main_queue(), {
-                                    weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
-                                })
-                            }
+            guard error == nil
+                else {
+                    dispatch_async(dispatch_get_main_queue(), {
+                        if let weakSelf = self {
+                            weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
                         }
                     })
-                })
-            } else {
-                _show(NSLocalizedString("Capture session output mode video", comment:""), message: NSLocalizedString("I can't take any picture", comment:""))
+                    return
+                }
+            imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sample)
+            guard let weakSelf = self,
+                validLibrary = weakSelf.library where weakSelf.writeFilesToPhoneLibrary
+                    else { return }
+
+                validLibrary.saveImage(UIImage(data: imageData)!, toAlbum: weakSelf.albumTitle!) { (complete, error) -> Void in
+                    if let error = error {
+                        dispatch_async(dispatch_get_main_queue(), {
+                            weakSelf._show(NSLocalizedString("Error", comment:""), message: error.localizedDescription)
+                        })
+                    }
+                }
             }
-        } else {
-            _show(NSLocalizedString("No capture session setup", comment:""), message: NSLocalizedString("I can't take any picture", comment:""))
-        }
+        })
     }
 
     /**
@@ -454,7 +456,7 @@ public class CameraManager: NSObject {
                 }
             }
             dispatch_async(dispatch_get_main_queue(), { () -> Void in
-                if let validEmbedingView = self.embedingView {
+                if let validEmbedingView = self.embeddingView {
                     validPreviewLayer.frame = validEmbedingView.bounds
                 }
             })
@@ -516,7 +518,7 @@ public class CameraManager: NSObject {
     }
 
     private func _addPreeviewLayerToView(view: UIView) {
-        embedingView = view
+        embeddingView = view
         dispatch_async(dispatch_get_main_queue(), { () -> Void in
             guard let _ = self.previewLayer else {
                 return
@@ -749,20 +751,16 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
 
         if let validLibrary = library {
             if writeFilesToPhoneLibrary {
-                validLibrary.saveVideo()
-
-
-
-//                validLibrary.writeVideoAtPathToSavedPhotosAlbum(outputFileURL, completionBlock: { (assetURL: NSURL?, error: NSError?) -> Void in
-//                    if (error != nil) {
-//                        self._show(NSLocalizedString("Unable to save video to the iPhone.", comment:""), message: error!.localizedDescription)
-//                        self._executeVideoCompletionWithURL(nil, error: error)
-//                    } else {
-//                        if let validAssetURL = assetURL {
-//                            self._executeVideoCompletionWithURL(validAssetURL, error: error)
-//                        }
-//                    }
-//                })
+                validLibrary.saveVideo(outputFileURL, toAlbum: albumTitle!, withCompletionHandler: { assetURL, error in
+                    if (error != nil) {
+                        self._show(NSLocalizedString("Unable to save video to the iPhone.", comment:""), message: error!.localizedDescription)
+                        self._executeVideoCompletionWithURL(nil, error: error)
+                    } else {
+                        if let validAssetURL = assetURL as? AVURLAsset {
+                            self._executeVideoCompletionWithURL(validAssetURL.URL, error: error)
+                        }
+                    }
+                })
             } else {
                 _executeVideoCompletionWithURL(outputFileURL, error: error)
             }
