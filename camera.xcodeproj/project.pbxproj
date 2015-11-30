@@ -16,6 +16,7 @@
 		C53CE6D81C06439F0064248A /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C53CE6D71C06439F0064248A /* CameraManager.swift */; };
 		C53CE6DA1C06447E0064248A /* PhotoLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = C53CE6D91C06447E0064248A /* PhotoLibrary.swift */; };
 		C5E872C21C0B8EBA00F5B105 /* StillImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E872C11C0B8EBA00F5B105 /* StillImage.swift */; };
+		C5E872C71C0C643700F5B105 /* VideoHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E872C61C0C643700F5B105 /* VideoHandler.swift */; };
 		D71DE8861AD677A7001E62F1 /* CameraManager.h in Headers */ = {isa = PBXBuildFile; fileRef = D71DE8851AD677A7001E62F1 /* CameraManager.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D71DE8981AD677A8001E62F1 /* CameraManager.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D71DE8811AD677A7001E62F1 /* CameraManager.framework */; };
 		D71DE8991AD677A8001E62F1 /* CameraManager.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D71DE8811AD677A7001E62F1 /* CameraManager.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -57,6 +58,7 @@
 		C53CE6D71C06439F0064248A /* CameraManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		C53CE6D91C06447E0064248A /* PhotoLibrary.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoLibrary.swift; sourceTree = "<group>"; };
 		C5E872C11C0B8EBA00F5B105 /* StillImage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StillImage.swift; sourceTree = "<group>"; };
+		C5E872C61C0C643700F5B105 /* VideoHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VideoHandler.swift; sourceTree = "<group>"; };
 		D71DE8811AD677A7001E62F1 /* CameraManager.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CameraManager.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D71DE8841AD677A7001E62F1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D71DE8851AD677A7001E62F1 /* CameraManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CameraManager.h; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 				C53CE6D71C06439F0064248A /* CameraManager.swift */,
 				C53CE6D91C06447E0064248A /* PhotoLibrary.swift */,
 				C5E872C11C0B8EBA00F5B105 /* StillImage.swift */,
+				C5E872C61C0C643700F5B105 /* VideoHandler.swift */,
 				D71DE8831AD677A7001E62F1 /* Supporting Files */,
 			);
 			path = CameraManager;
@@ -273,6 +276,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C53CE6DA1C06447E0064248A /* PhotoLibrary.swift in Sources */,
+				C5E872C71C0C643700F5B105 /* VideoHandler.swift in Sources */,
 				C5E872C21C0B8EBA00F5B105 /* StillImage.swift in Sources */,
 				C53CE6D81C06439F0064248A /* CameraManager.swift in Sources */,
 			);

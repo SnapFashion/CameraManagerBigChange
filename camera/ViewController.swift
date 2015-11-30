@@ -13,7 +13,7 @@ class ViewController: UIViewController {
     
     // MARK: - Constants
 
-    let cameraManager = CameraManager()
+    let cameraManager = CameraManager(cameraOutputMode: .VideoWithMic)
     
     // MARK: - @IBOutlets
 
@@ -123,7 +123,7 @@ class ViewController: UIViewController {
             } else {
                 cameraManager.stopRecordingVideo({ (videoURL, error) -> Void in
                     if let errorOccured = error {                        
-                        self.cameraManager.showErrorBlock(erTitle: "Error occurred", erMessage: errorOccured.localizedDescription)
+                        self.cameraManager.showErrorBlock!(erTitle: "Error occurred", erMessage: errorOccured.localizedDescription)
                     }
                 })
             }
