@@ -52,8 +52,10 @@ class StillImage {
                     return
                 }
 
+            imageCompletion(UIImage(data: imageData), error)
+
             validLibrary.saveImage(UIImage(data: imageData)!, toAlbum: albumTitle) { (complete, error) -> Void in
-                imageCompletion(UIImage(data: imageData), error)
+              //implement a side error closure.
             }
         }
     }
