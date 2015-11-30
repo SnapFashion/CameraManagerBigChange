@@ -147,10 +147,10 @@ public class CameraManager: NSObject {
         return AVCaptureDevice.defaultDeviceWithMediaType(AVMediaTypeAudio)
     }()
     
-    private var stillImageOutput: AVCaptureStillImageOutput?
     private var movieOutput: AVCaptureMovieFileOutput?
     private var previewLayer: AVCaptureVideoPreviewLayer?
     private var library: PhotoLibrary?
+    private var stillImageHandler: StillImage?
 
     private var cameraIsSetup = false
     private var cameraIsObservingDeviceOrientation = false
@@ -266,7 +266,7 @@ public class CameraManager: NSObject {
         frontCameraDevice = nil
         backCameraDevice = nil
         mic = nil
-        stillImageOutput = nil
+        stillImageHandler = nil
         movieOutput = nil
     }
 
@@ -288,7 +288,7 @@ public class CameraManager: NSObject {
             }
 
         dispatch_async(sessionQueue, {
-            self._getStillImageOutput().captureStillImageAsynchronouslyFromConnection(self._getStillImageOutput().connectionWithMediaType(AVMediaTypeVideo)) { [weak self] (sample: CMSampleBuffer!, error: NSError!) -> Void in
+            self.stillImageHandler!._getStillImageOutput(self.captureSession).captureStillImageAsynchronouslyFromConnection(self.stillImageHandler!._getStillImageOutput(self.captureSession).connectionWithMediaType(AVMediaTypeVideo)) { [weak self] (sample: CMSampleBuffer!, error: NSError!) -> Void in
             var imageData: NSData!
             defer {
                 imageCompletion(UIImage(data: imageData), error)
@@ -384,7 +384,7 @@ public class CameraManager: NSObject {
                     do {
                         try captureDevice.lockForConfiguration()
                     } catch {
-                        return;
+                        return
                     }
                     captureDevice.torchMode = avTorchMode!
                     captureDevice.unlockForConfiguration()
@@ -418,29 +418,13 @@ public class CameraManager: NSObject {
         }
         return movieOutput!
     }
-    
-    private func _getStillImageOutput() -> AVCaptureStillImageOutput {
-        var shouldReinitializeStillImageOutput = stillImageOutput == nil
-        if !shouldReinitializeStillImageOutput {
-            if let connection = stillImageOutput!.connectionWithMediaType(AVMediaTypeVideo) {
-                shouldReinitializeStillImageOutput = shouldReinitializeStillImageOutput || !connection.active
-            }
-        }
-        if shouldReinitializeStillImageOutput {
-            stillImageOutput = AVCaptureStillImageOutput()
-            
-            captureSession?.beginConfiguration()
-            captureSession?.addOutput(stillImageOutput)
-            captureSession?.commitConfiguration()
-        }
-        return stillImageOutput!
-    }
+
     
     @objc private func _orientationChanged() {
         var currentConnection: AVCaptureConnection?;
         switch cameraOutputMode {
         case .StillImage:
-            currentConnection = stillImageOutput?.connectionWithMediaType(AVMediaTypeVideo)
+            currentConnection = stillImageHandler?._getStillImageOutput(captureSession).connectionWithMediaType(AVMediaTypeVideo)
         case .VideoOnly, .VideoWithMic:
             currentConnection = _getMovieOutput().connectionWithMediaType(AVMediaTypeVideo)
         }
@@ -555,8 +539,8 @@ public class CameraManager: NSObject {
             // remove current setting
             switch cameraOutputToRemove {
             case .StillImage:
-                if let validStillImageOutput = stillImageOutput {
-                    captureSession?.removeOutput(validStillImageOutput)
+                if let validStillImageOutput = stillImageHandler {
+                    captureSession?.removeOutput(validStillImageOutput._getStillImageOutput(captureSession!))
                 }
             case .VideoOnly, .VideoWithMic:
                 if let validMovieOutput = movieOutput {
@@ -571,11 +555,11 @@ public class CameraManager: NSObject {
         // configure new devices
         switch newCameraOutputMode {
         case .StillImage:
-            if (stillImageOutput == nil) {
-                _setupOutputs()
+            if (stillImageHandler == nil) {
+                stillImageHandler = StillImage()
             }
-            if let validStillImageOutput = stillImageOutput {
-                captureSession?.addOutput(validStillImageOutput)
+            if let validStillImageOutput = stillImageHandler {
+                captureSession?.addOutput(validStillImageOutput._getStillImageOutput(captureSession!))
             }
         case .VideoOnly, .VideoWithMic:
             captureSession?.addOutput(_getMovieOutput())
@@ -592,9 +576,6 @@ public class CameraManager: NSObject {
     }
     
     private func _setupOutputs() {
-        if (stillImageOutput == nil) {
-            stillImageOutput = AVCaptureStillImageOutput()
-        }
         if (movieOutput == nil) {
             movieOutput = AVCaptureMovieFileOutput()
         }
