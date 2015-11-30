@@ -179,7 +179,7 @@ public class CameraManager: NSObject {
     public func addPreviewLayerToView(view: UIView) -> CameraState {
         return addPreviewLayerToView(view, newCameraOutputMode: cameraOutputMode)
     }
-    public func addPreviewLayerToView(view: UIView, newCameraOutputMode: CameraOutputMode) -> CameraState {
+    private func addPreviewLayerToView(view: UIView, newCameraOutputMode: CameraOutputMode) -> CameraState {
         if canLoadCamera {
             if let _ = embeddingView {
                 if let validPreviewLayer = previewLayer {
@@ -291,7 +291,9 @@ public class CameraManager: NSObject {
             self.stillImageHandler?.captureImageFromCaptureSession(self.captureSession!, imageCompletion: { [weak self] (image, error) -> Void in
                 guard let error = error
                     else {
-                        imageCompletion(image, nil)
+                        dispatch_async(dispatch_get_main_queue(), {
+                            imageCompletion(image, nil)
+                        })
                         return
                     }
                 dispatch_async(dispatch_get_main_queue(), {
@@ -470,12 +472,12 @@ public class CameraManager: NSObject {
     private func _addPreeviewLayerToView(view: UIView) {
         embeddingView = view
         dispatch_async(dispatch_get_main_queue(), { () -> Void in
-            guard let _ = self.previewLayer else {
+            guard let pl = self.previewLayer else {
                 return
             }
-            self.previewLayer!.frame = view.layer.bounds
+            pl.frame = view.layer.bounds
             view.clipsToBounds = true
-            view.layer.addSublayer(self.previewLayer!)
+            view.layer.insertSublayer(pl, atIndex: 0)
         })
     }
 

@@ -24,10 +24,8 @@ class ViewController: UIViewController {
     
     @IBOutlet weak var askForPermissionsButton: UIButton!
     @IBOutlet weak var askForPermissionsLabel: UILabel!
-    
-    
+
     // MARK: - UIViewController
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -68,7 +66,7 @@ class ViewController: UIViewController {
     
     private func addCameraToView()
     {
-        cameraManager.addPreviewLayerToView(cameraView, newCameraOutputMode: CameraOutputMode.VideoWithMic)
+        cameraManager.addPreviewLayerToView(cameraView)
         cameraManager.showErrorBlock = { (erTitle: String, erMessage: String) -> Void in
             
 //            var alertController = UIAlertController(title: erTitle, message: erMessage, preferredStyle: .Alert)
