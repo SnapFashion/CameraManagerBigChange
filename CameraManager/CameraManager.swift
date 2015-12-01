@@ -123,6 +123,7 @@ public class CameraManager: NSObject {
 
     private weak var embeddingView: UIView?
     private var videoCompletion: ((videoURL: NSURL?, error: NSError?) -> Void)?
+    private var withZoom = false
 
     private var sessionQueue = dispatch_queue_create("CameraSessionQueue", DISPATCH_QUEUE_SERIAL)
 
@@ -144,6 +145,7 @@ public class CameraManager: NSObject {
     private let library = PhotoLibrary()
     private var videoHandler: VideoHandler?
     private var stillImageHandler: StillImage?
+    private var zoomScale = CGFloat(1.0)
 
     private var cameraIsSetup = false
     private var cameraIsObservingDeviceOrientation = false
@@ -176,7 +178,8 @@ public class CameraManager: NSObject {
     public init (cameraOutputMode: CameraOutputMode) {
         self.cameraOutputMode = cameraOutputMode
     }
-    public func addPreviewLayerToView(view: UIView) -> CameraState {
+    public func addPreviewLayerToView(view: UIView, withZoom zoom: Bool = false) -> CameraState {
+        withZoom = zoom
         return addPreviewLayerToView(view, newCameraOutputMode: cameraOutputMode)
     }
     private func addPreviewLayerToView(view: UIView, newCameraOutputMode: CameraOutputMode) -> CameraState {
@@ -393,6 +396,42 @@ public class CameraManager: NSObject {
             videoCompletion = nil
         }
     }
+
+    private func attachZoom(view: UIView) {
+        let pinch = UIPinchGestureRecognizer(target: self, action: "_zoom:")
+        view.addGestureRecognizer(pinch)
+    }
+
+    @objc private func _zoom(recognizer: UIPinchGestureRecognizer) {
+        guard let view = embeddingView,
+          previewLayer = previewLayer
+          else { return }
+
+        var allTouchesOnPreviewLayer = true
+        let numTouch = recognizer.numberOfTouches()
+      
+        for var i = 0; i < numTouch; i++ {
+            let location = recognizer.locationOfTouch(i, inView: view)
+            let convertedTouch = previewLayer.convertPoint(location, fromLayer: previewLayer.superlayer)
+            if !previewLayer.containsPoint(convertedTouch) {
+              allTouchesOnPreviewLayer = false
+              break
+            }
+        }
+        if allTouchesOnPreviewLayer {
+            do {
+                let captureDevice = AVCaptureDevice.devices().first as? AVCaptureDevice
+                try captureDevice?.lockForConfiguration()
+                if recognizer.scale >= 1.0 {
+                  captureDevice?.videoZoomFactor = recognizer.scale
+                  zoomScale = recognizer.scale
+                }
+              captureDevice?.unlockForConfiguration()
+            } catch {
+                print("Error locking configuration")
+            }
+        }
+    }
     
     @objc private func _orientationChanged() {
         var currentConnection: AVCaptureConnection?;
@@ -471,6 +510,9 @@ public class CameraManager: NSObject {
 
     private func _addPreeviewLayerToView(view: UIView) {
         embeddingView = view
+        if withZoom {
+            attachZoom(view)
+        }
         dispatch_async(dispatch_get_main_queue(), { () -> Void in
             guard let pl = self.previewLayer else {
                 return
