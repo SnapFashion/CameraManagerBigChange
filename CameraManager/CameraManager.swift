@@ -129,9 +129,7 @@ public class CameraManager: NSObject {
     /// Property to check video recording file size when in progress
     public var recordedFileSize : Int64 { return videoHandler?.recordedFileSize ?? 0 }
 
-    
     // MARK: - Private properties
-
     private weak var embeddingView: UIView?
     private var videoCompletion: ((videoURL: NSURL?, error: NSError?) -> Void)?
     private var withZoom = false
