@@ -55,6 +55,17 @@ public class CameraManager: NSObject {
 
     /// Property to determine if manager should write the resources to the phone library. Default value is true.
     public var writeFilesToPhoneLibrary = true
+    
+    /// Property to determine if manager should follow device orientation. Default value is true.
+    public var shouldRespondToOrientationChanges = true {
+        didSet {
+            if shouldRespondToOrientationChanges {
+                _startFollowingDeviceOrientation()
+            } else {
+                _stopFollowingDeviceOrientation()
+            }
+        }
+    }
 
     /// Property for album title
     public var albumTitle: String? = "super test2"
@@ -187,11 +198,11 @@ public class CameraManager: NSObject {
                 }
             }
             if cameraIsSetup {
-                _addPreeviewLayerToView(view)
+                _addPreviewLayerToView(view)
                 cameraOutputMode = newCameraOutputMode
             } else {
                 _setupCamera({ Void -> Void in
-                    self._addPreeviewLayerToView(view)
+                    self._addPreviewLayerToView(view)
                     self.cameraOutputMode = newCameraOutputMode
                 })
             }
@@ -245,8 +256,8 @@ public class CameraManager: NSObject {
                     stopAndRemoveCaptureSession()
                 }
                 _setupCamera({Void -> Void in
-                    if let validEmbedingView = self.embeddingView {
-                        self._addPreeviewLayerToView(validEmbedingView)
+                    if let validEmbeddingView = self.embeddingView {
+                        self._addPreviewLayerToView(validEmbeddingView)
                     }
                     self._startFollowingDeviceOrientation()
                 })
@@ -504,7 +515,7 @@ public class CameraManager: NSObject {
     }
 
     private func _startFollowingDeviceOrientation() {
-        if !cameraIsObservingDeviceOrientation {
+        if shouldRespondToOrientationChanges && !cameraIsObservingDeviceOrientation {
             NSNotificationCenter.defaultCenter().addObserver(self, selector: "_orientationChanged", name: UIDeviceOrientationDidChangeNotification, object: nil)
             cameraIsObservingDeviceOrientation = true
         }
@@ -517,7 +528,7 @@ public class CameraManager: NSObject {
         }
     }
 
-    private func _addPreeviewLayerToView(view: UIView) {
+    private func _addPreviewLayerToView(view: UIView) {
         embeddingView = view
         dispatch_async(dispatch_get_main_queue(), { () -> Void in
             guard let _ = self.previewLayer else {
