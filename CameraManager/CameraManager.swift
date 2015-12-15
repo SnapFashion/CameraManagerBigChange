@@ -299,7 +299,7 @@ public class CameraManager: NSObject {
                 return
             }
 
-        dispatch_async(sessionQueue, {
+        dispatch_async(sessionQueue) {
             self.stillImageHandler?.captureImageFromCaptureSession(self.captureSession!, imageCompletion: { [weak self] (image, error) -> Void in
                 guard let error = error
                     else {
@@ -314,7 +314,7 @@ public class CameraManager: NSObject {
                     }
                 })
             })
-        })
+        }
     }
 
     /**
@@ -443,7 +443,7 @@ public class CameraManager: NSObject {
     }
     
     @objc private func _orientationChanged() {
-        var currentConnection: AVCaptureConnection?;
+        var currentConnection: AVCaptureConnection?
         switch cameraOutputMode {
         case .StillImage:
             currentConnection = stillImageHandler?.getStillImageOutput(captureSession).connectionWithMediaType(AVMediaTypeVideo)
