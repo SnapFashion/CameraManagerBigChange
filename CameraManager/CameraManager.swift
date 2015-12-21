@@ -30,7 +30,7 @@ public enum CameraOutputQuality: Int {
 }
 
 /// Class for handling iDevices custom camera usage
-public class CameraManager: NSObject {
+public class CameraManager {
 
     // MARK: - Public properties
     
@@ -411,7 +411,8 @@ public class CameraManager: NSObject {
         view.addGestureRecognizer(pinch)
     }
 
-    @objc private func _zoom(recognizer: UIPinchGestureRecognizer) {
+    @objc
+    private func _zoom(recognizer: UIPinchGestureRecognizer) {
         guard let view = embeddingView,
           previewLayer = previewLayer
           else { return }
