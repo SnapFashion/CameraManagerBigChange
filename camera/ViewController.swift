@@ -64,15 +64,12 @@ class ViewController: UIViewController {
     
     // MARK: - ViewController
     
-    private func addCameraToView()
-    {
-        cameraManager.addPreviewLayerToView(cameraView)
-        cameraManager.showErrorBlock = { (erTitle: String, erMessage: String) -> Void in
-        cameraManager.addPreviewLayerToView(cameraView, newCameraOutputMode: CameraOutputMode.VideoWithMic)
+    private func addCameraToView() {
+        cameraManager.addPreviewLayerToView(cameraView, withZoom: true)
         cameraManager.showErrorBlock = { [weak self] (erTitle: String, erMessage: String) -> Void in
         
             let alertController = UIAlertController(title: erTitle, message: erMessage, preferredStyle: .Alert)
-            alertController.addAction(UIAlertAction(title: "OK", style: UIAlertActionStyle.Default, handler: { (alertAction) -> Void in  }))
+            alertController.addAction(UIAlertAction(title: "OK", style: .Default, handler: nil))
             
             self?.presentViewController(alertController, animated: true, completion: nil)
         }
@@ -88,8 +85,8 @@ class ViewController: UIViewController {
     // MARK: - @IBActions
 
     @IBAction func changeFlashMode(sender: UIButton) {
-        
-        switch (cameraManager.changeFlashMode()) {
+        let flashMode = cameraManager.changeFlashMode()
+        switch (flashMode) {
         case .Off:
             sender.setTitle("Flash Off", forState: UIControlState.Normal)
         case .On:
@@ -124,7 +121,7 @@ class ViewController: UIViewController {
     
     @IBAction func outputModeButtonTapped(sender: UIButton) {
         
-        cameraManager.cameraOutputMode = cameraManager.cameraOutputMode == CameraOutputMode.VideoWithMic ? CameraOutputMode.StillImage : CameraOutputMode.VideoWithMic
+        cameraManager.cameraOutputMode = cameraManager.cameraOutputMode == .VideoWithMic ? .StillImage : .VideoWithMic
         switch (cameraManager.cameraOutputMode) {
         case .StillImage:
             cameraButton.selected = false

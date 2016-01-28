@@ -61,7 +61,7 @@ public class CameraManager {
     }
 
     /// Property for album title
-    public var albumTitle: String = "All Images"
+    public var albumTitle = "All Images"
     
     /// The Bool property to determine if the camera is ready to use.
     public var cameraIsReady: Bool {
@@ -184,7 +184,7 @@ public class CameraManager {
         return NSURL(string: tempPath)!
     }()
 
-    private var canLoadCamera: Bool {
+    private var _canLoadCamera: Bool {
         let currentCameraState = _checkIfCameraIsAvailable()
         return currentCameraState == .Ready || (currentCameraState == .NotDetermined && showAccessPermissionPopupAutomatically)
     }
@@ -203,14 +203,18 @@ public class CameraManager {
     public init (cameraOutputMode: CameraOutputMode) {
         self.cameraOutputMode = cameraOutputMode
     }
+
     public func addPreviewLayerToView(view: UIView, withZoom zoom: Bool = false) -> CameraState {
-        withZoom = zoom
-        return addPreviewLayerToView(view, newCameraOutputMode: newCameraOutputMode, completition: nil)
+        return addPreviewLayerToView(view, newCameraOutputMode: cameraOutputMode, withZoom: zoom)
     }
-    private func addPreviewLayerToView(view: UIView, newCameraOutputMode: CameraOutputMode) -> CameraState {
-        if canLoadCamera {
-    public func addPreviewLayerToView(view: UIView, newCameraOutputMode: CameraOutputMode, completition: (Void -> Void)?) -> CameraState {
-        if _canLoadCamera() {
+
+    public func addPreviewLayerToView(view: UIView, newCameraOutputMode: CameraOutputMode, withZoom zoom: Bool = false) -> CameraState {
+        withZoom = zoom
+        return addPreviewLayerToView(view, newCameraOutputMode: newCameraOutputMode, completion: nil)
+    }
+
+    public func addPreviewLayerToView(view: UIView, newCameraOutputMode: CameraOutputMode, completion: (Void -> Void)?) -> CameraState {
+        if _canLoadCamera {
             if let _ = embeddingView {
                 if let validPreviewLayer = previewLayer {
                     validPreviewLayer.removeFromSuperlayer()
@@ -219,14 +223,14 @@ public class CameraManager {
             if cameraIsSetup {
                 _addPreviewLayerToView(view)
                 cameraOutputMode = newCameraOutputMode
-                if let validCompletition = completition {
+                if let validCompletition = completion {
                     validCompletition()
                 }
             } else {
                 _setupCamera({ Void -> Void in
                     self._addPreviewLayerToView(view)
                     self.cameraOutputMode = newCameraOutputMode
-                    if let validCompletition = completition {
+                    if let validCompletition = completion {
                         validCompletition()
                     }
                 })
@@ -241,18 +245,17 @@ public class CameraManager {
     :param: completion Completion block with the result of permission request
     */
     public func askUserForCameraPermissions(completion: Bool -> Void) {
-        AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo, completionHandler: { (alowedAccess) -> Void in
+        AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo, completionHandler: { allowedAccess in
             if self.cameraOutputMode == .VideoWithMic {
-                AVCaptureDevice.requestAccessForMediaType(AVMediaTypeAudio, completionHandler: { (alowedAccess) -> Void in
-                    dispatch_sync(dispatch_get_main_queue(), { () -> Void in
-                        completion(alowedAccess)
-                    })
+                AVCaptureDevice.requestAccessForMediaType(AVMediaTypeAudio, completionHandler: { allowedAccess in
+                    dispatch_sync(dispatch_get_main_queue()) {
+                        completion(allowedAccess)
+                    }
                 })
             } else {
-                dispatch_sync(dispatch_get_main_queue(), { () -> Void in
-                    completion(alowedAccess)
-                })
-
+                dispatch_sync(dispatch_get_main_queue()) {
+                    completion(allowedAccess)
+                }
             }
         })
 
@@ -276,7 +279,7 @@ public class CameraManager {
                 _startFollowingDeviceOrientation()
             }
         } else {
-            if canLoadCamera {
+            if _canLoadCamera {
                 if cameraIsSetup {
                     stopAndRemoveCaptureSession()
                 }
@@ -431,22 +434,8 @@ public class CameraManager {
     }
 
     private func attachZoom(view: UIView) {
-        var shouldReinitializeMovieOutput = movieOutput == nil
-        if !shouldReinitializeMovieOutput {
-            if let connection = movieOutput!.connectionWithMediaType(AVMediaTypeVideo) {
         let pinch = UIPinchGestureRecognizer(target: self, action: "_zoom:")
-            }
-        }
-        
-        if shouldReinitializeMovieOutput {
-            movieOutput = AVCaptureMovieFileOutput()
-            movieOutput!.movieFragmentInterval = kCMTimeInvalid
-
-            captureSession?.beginConfiguration()
-            captureSession?.addOutput(movieOutput)
         view.addGestureRecognizer(pinch)
-        }
-        return movieOutput!
     }
 
     @objc
@@ -517,7 +506,6 @@ public class CameraManager {
         default:
             return .Portrait
         }
-    private func _canLoadCamera() -> Bool {
     }
 
     private func _setupCamera(completion: Void -> Void) {
@@ -590,35 +578,40 @@ public class CameraManager {
             return .NoDeviceFound
         }
     }
-    
+
+    private func removeOutputWithMode(outputMode: CameraOutputMode?, fromSession session: AVCaptureSession?) {
+      if let cameraOutputToRemove = outputMode {
+        // remove current setting
+        switch cameraOutputToRemove {
+        case .StillImage:
+          if let validStillImageOutput = stillImageHandler?.getStillImageOutput(session) {
+            session?.removeOutput(validStillImageOutput)
+          }
+        case .VideoOnly, .VideoWithMic:
+          if let validMovieOutput = videoHandler?.getMovieOutput(session) {
+            session?.removeOutput(validMovieOutput)
+          }
+          if cameraOutputToRemove == .VideoWithMic {
+            _removeMicInput()
+          }
+        }
+      }
+    }
+
+
     private func _setupOutputMode(newCameraOutputMode: CameraOutputMode, oldCameraOutputMode: CameraOutputMode?) {
         captureSession?.beginConfiguration()
         
-        if let cameraOutputToRemove = oldCameraOutputMode {
-            // remove current setting
-            switch cameraOutputToRemove {
-            case .StillImage:
-                if let validStillImageOutput = stillImageHandler {
-                    captureSession?.removeOutput(validStillImageOutput.getStillImageOutput(captureSession!))
-                }
-            case .VideoOnly, .VideoWithMic:
-                if let validMovieOutput = videoHandler?.getMovieOutput(captureSession!) {
-                    captureSession?.removeOutput(validMovieOutput)
-                }
-                if cameraOutputToRemove == .VideoWithMic {
-                    _removeMicInput()
-                }
-            }
-        }
+        removeOutputWithMode(oldCameraOutputMode, fromSession: captureSession)
         
         // configure new devices
         switch newCameraOutputMode {
         case .StillImage:
-            if (stillImageHandler == nil) {
+            if stillImageHandler == nil {
                 stillImageHandler = StillImage(library: library, albumTitle: albumTitle)
             }
             if let validStillImageOutput = stillImageHandler {
-                validStillImageOutput.getStillImageOutput(captureSession!)
+                validStillImageOutput.getStillImageOutput(captureSession)
             }
         case .VideoOnly, .VideoWithMic:
             if videoHandler == nil {
@@ -635,19 +628,6 @@ public class CameraManager {
         captureSession?.commitConfiguration()
         _updateCameraQualityMode(cameraOutputQuality)
         _orientationChanged()
-    }
-    
-    private func _setupOutputs() {
-        if (stillImageOutput == nil) {
-            stillImageOutput = AVCaptureStillImageOutput()
-        }
-        if (movieOutput == nil) {
-            movieOutput = AVCaptureMovieFileOutput()
-            movieOutput!.movieFragmentInterval = kCMTimeInvalid
-        }
-        if library == nil {
-            library = PhotoLibrary()
-        }
     }
 
     private func _setupPreviewLayer() {
