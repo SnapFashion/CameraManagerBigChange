@@ -12,9 +12,25 @@ typealias CompletionHandler = (Bool,NSError?) -> Void
 
 class PhotoLibrary {
     func saveImage(image: UIImage?, toAlbum albumName: String, withCompletionHandler handler: (AnyObject, NSError?) -> Void) {
-        guard let img = image
-            else { return }
-        saveItem(img, toAlbum: albumName, withCompletionHandler: handler)
+      guard let img = image
+        else { return }
+
+      PHPhotoLibrary.requestAuthorization { status in
+        switch status {
+        case .Authorized:
+          self.saveItem(img, toAlbum: albumName, withCompletionHandler: handler)
+          break
+        case .Denied:
+          print("denied")
+          break
+        case .Restricted:
+          print("restricted")
+          break
+        case .NotDetermined:
+          print("not determined")
+          break
+        }
+      }
     }
 
     func saveVideo(videoURL: NSURL?, toAlbum albumName: String, withCompletionHandler handler: (AnyObject, NSError?) -> Void) {
