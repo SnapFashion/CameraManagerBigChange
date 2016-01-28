@@ -62,7 +62,14 @@ public class CameraManager {
 
     /// Property for album title
     public var albumTitle: String = "All Images"
-
+    
+    /// The Bool property to determine if the camera is ready to use.
+    public var cameraIsReady: Bool {
+        get {
+            return cameraIsSetup
+        }
+    }
+    
     /// The Bool property to determine if current device has front camera.
     public var hasFrontCamera: Bool = {
         let devices = AVCaptureDevice.devicesWithMediaType(AVMediaTypeVideo)
@@ -90,8 +97,10 @@ public class CameraManager {
     /// Property to change camera device between front and back.
     public var cameraDevice = CameraDevice.Back {
         didSet {
-            if cameraDevice != oldValue {
-                _updateCameraDevice(cameraDevice)
+            if cameraIsSetup {
+                if cameraDevice != oldValue {
+                    _updateCameraDevice(cameraDevice)
+                }
             }
         }
     }
@@ -99,8 +108,10 @@ public class CameraManager {
     /// Property to change camera flash mode.
     public var flashMode = CameraFlashMode.Off {
         didSet {
-            if flashMode != oldValue {
-                _updateFlasMode(flashMode)
+            if cameraIsSetup {
+                if flashMode != oldValue {
+                    _updateFlasMode(flashMode)
+                }
             }
         }
     }
@@ -108,8 +119,10 @@ public class CameraManager {
     /// Property to change camera output quality.
     public var cameraOutputQuality = CameraOutputQuality.High {
         didSet {
-            if cameraOutputQuality != oldValue {
-                _updateCameraQualityMode(cameraOutputQuality)
+            if cameraIsSetup {
+                if cameraOutputQuality != oldValue {
+                    _updateCameraQualityMode(cameraOutputQuality)
+                }
             }
         }
     }
@@ -117,8 +130,10 @@ public class CameraManager {
     /// Property to change camera output.
     public var cameraOutputMode = CameraOutputMode.StillImage {
         didSet {
-            if cameraOutputMode != oldValue {
-                _setupOutputMode(cameraOutputMode, oldCameraOutputMode: oldValue)
+            if cameraIsSetup {
+                if cameraOutputMode != oldValue {
+                    _setupOutputMode(cameraOutputMode, oldCameraOutputMode: oldValue)
+                }
             }
         }
     }
@@ -181,6 +196,7 @@ public class CameraManager {
 
     :param: view The view you want to add the preview layer to
     :param: cameraOutputMode The mode you want capturesession to run image / video / video and microphone
+    :param: completition Optional completition block
     
     :returns: Current state of the camera: Ready / AccessDenied / NoDeviceFound / NotDetermined.
     */
@@ -189,10 +205,12 @@ public class CameraManager {
     }
     public func addPreviewLayerToView(view: UIView, withZoom zoom: Bool = false) -> CameraState {
         withZoom = zoom
-        return addPreviewLayerToView(view, newCameraOutputMode: cameraOutputMode)
+        return addPreviewLayerToView(view, newCameraOutputMode: newCameraOutputMode, completition: nil)
     }
     private func addPreviewLayerToView(view: UIView, newCameraOutputMode: CameraOutputMode) -> CameraState {
         if canLoadCamera {
+    public func addPreviewLayerToView(view: UIView, newCameraOutputMode: CameraOutputMode, completition: (Void -> Void)?) -> CameraState {
+        if _canLoadCamera() {
             if let _ = embeddingView {
                 if let validPreviewLayer = previewLayer {
                     validPreviewLayer.removeFromSuperlayer()
@@ -201,10 +219,16 @@ public class CameraManager {
             if cameraIsSetup {
                 _addPreviewLayerToView(view)
                 cameraOutputMode = newCameraOutputMode
+                if let validCompletition = completition {
+                    validCompletition()
+                }
             } else {
                 _setupCamera({ Void -> Void in
                     self._addPreviewLayerToView(view)
                     self.cameraOutputMode = newCameraOutputMode
+                    if let validCompletition = completition {
+                        validCompletition()
+                    }
                 })
             }
         }
@@ -407,8 +431,22 @@ public class CameraManager {
     }
 
     private func attachZoom(view: UIView) {
+        var shouldReinitializeMovieOutput = movieOutput == nil
+        if !shouldReinitializeMovieOutput {
+            if let connection = movieOutput!.connectionWithMediaType(AVMediaTypeVideo) {
         let pinch = UIPinchGestureRecognizer(target: self, action: "_zoom:")
+            }
+        }
+        
+        if shouldReinitializeMovieOutput {
+            movieOutput = AVCaptureMovieFileOutput()
+            movieOutput!.movieFragmentInterval = kCMTimeInvalid
+
+            captureSession?.beginConfiguration()
+            captureSession?.addOutput(movieOutput)
         view.addGestureRecognizer(pinch)
+        }
+        return movieOutput!
     }
 
     @objc
@@ -479,6 +517,7 @@ public class CameraManager {
         default:
             return .Portrait
         }
+    private func _canLoadCamera() -> Bool {
     }
 
     private func _setupCamera(completion: Void -> Void) {
@@ -596,6 +635,19 @@ public class CameraManager {
         captureSession?.commitConfiguration()
         _updateCameraQualityMode(cameraOutputQuality)
         _orientationChanged()
+    }
+    
+    private func _setupOutputs() {
+        if (stillImageOutput == nil) {
+            stillImageOutput = AVCaptureStillImageOutput()
+        }
+        if (movieOutput == nil) {
+            movieOutput = AVCaptureMovieFileOutput()
+            movieOutput!.movieFragmentInterval = kCMTimeInvalid
+        }
+        if library == nil {
+            library = PhotoLibrary()
+        }
     }
 
     private func _setupPreviewLayer() {
