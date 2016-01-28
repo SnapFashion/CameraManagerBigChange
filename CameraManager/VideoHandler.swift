@@ -36,6 +36,7 @@ class VideoHandler: NSObject {
 
         if shouldReinitializeMovieOutput {
             movieOutput = AVCaptureMovieFileOutput()
+            movieOutput!.movieFragmentInterval = kCMTimeInvalid
 
             captureSession?.beginConfiguration()
             captureSession?.addOutput(movieOutput)
