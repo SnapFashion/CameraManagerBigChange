@@ -200,7 +200,8 @@ public class CameraManager {
     
     :returns: Current state of the camera: Ready / AccessDenied / NoDeviceFound / NotDetermined.
     */
-    public init (cameraOutputMode: CameraOutputMode) {
+    public init (cameraOutputMode: CameraOutputMode, withCameraDevice cameraDevice: CameraDevice = .Back) {
+        self.cameraDevice = cameraDevice
         self.cameraOutputMode = cameraOutputMode
     }
 
@@ -434,7 +435,7 @@ public class CameraManager {
     }
 
     private func attachZoom(view: UIView) {
-        let pinch = UIPinchGestureRecognizer(target: self, action: "_zoom:")
+        let pinch = UIPinchGestureRecognizer(target: self, action: #selector(CameraManager._zoom(_:)))
         view.addGestureRecognizer(pinch)
     }
 
@@ -447,7 +448,7 @@ public class CameraManager {
         var allTouchesOnPreviewLayer = true
         let numTouch = recognizer.numberOfTouches()
       
-        for var i = 0; i < numTouch; i++ {
+        for i in 0 ..< numTouch {
             let location = recognizer.locationOfTouch(i, inView: view)
             let convertedTouch = previewLayer.convertPoint(location, fromLayer: previewLayer.superlayer)
             if !previewLayer.containsPoint(convertedTouch) {
@@ -533,7 +534,7 @@ public class CameraManager {
 
     private func _startFollowingDeviceOrientation() {
         if shouldRespondToOrientationChanges && !cameraIsObservingDeviceOrientation {
-            NSNotificationCenter.defaultCenter().addObserver(self, selector: "_orientationChanged", name: UIDeviceOrientationDidChangeNotification, object: nil)
+            NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(CameraManager._orientationChanged), name: UIDeviceOrientationDidChangeNotification, object: nil)
             cameraIsObservingDeviceOrientation = true
         }
     }
