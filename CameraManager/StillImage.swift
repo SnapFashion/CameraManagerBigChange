@@ -10,13 +10,6 @@ import AVFoundation
 
 class StillImage {
     private var stillImageOutput: AVCaptureStillImageOutput?
-    private var albumTitle: String?
-    private weak var library: PhotoLibrary?
-
-    init(library: PhotoLibrary, albumTitle: String) {
-        self.albumTitle = albumTitle
-        self.library = library
-    }
 
     func getStillImageOutput(captureSession: AVCaptureSession?) -> AVCaptureStillImageOutput {
         var shouldReinitializeStillImageOutput = stillImageOutput == nil
@@ -37,26 +30,15 @@ class StillImage {
 
     func captureImageFromCaptureSession(captureSession: AVCaptureSession, imageCompletion: (UIImage?, NSError?) -> Void) {
         let imageOutput = getStillImageOutput(captureSession)
-        imageOutput.captureStillImageAsynchronouslyFromConnection(imageOutput.connectionWithMediaType(AVMediaTypeVideo)) { [weak self] (sample: CMSampleBuffer!, error: NSError!) -> Void in
+        imageOutput.captureStillImageAsynchronouslyFromConnection(imageOutput.connectionWithMediaType(AVMediaTypeVideo)) { (sample: CMSampleBuffer!, error: NSError!) -> Void in
             guard error == nil
                 else {
                     imageCompletion(nil, error)
                     return
                 }
             let imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sample)
-            guard let weakSelf = self,
-                validLibrary = weakSelf.library,
-                albumTitle = weakSelf.albumTitle
-                else {
-                    imageCompletion(UIImage(data: imageData), error)
-                    return
-                }
-
             imageCompletion(UIImage(data: imageData), error)
-
-            validLibrary.saveImage(UIImage(data: imageData)!, toAlbum: albumTitle) { (complete, error) -> Void in
-              //implement a side error closure.
-            }
+            imageCompletion(UIImage(data: imageData), error)
         }
     }
 }

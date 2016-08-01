@@ -331,6 +331,11 @@ public class CameraManager {
             self.stillImageHandler?.captureImageFromCaptureSession(self.captureSession!, imageCompletion: { [weak self] (image, error) -> Void in
                 guard let error = error
                     else {
+                      if let weakSelf = self, image = image where weakSelf.writeFilesToPhoneLibrary {
+                        weakSelf.library.saveImage(image, toAlbum: weakSelf.albumTitle) { (complete, error) -> Void in }
+                      }
+                      
+                      
                         dispatch_async(dispatch_get_main_queue(), {
                             imageCompletion(image, nil)
                         })
@@ -609,7 +614,7 @@ public class CameraManager {
         switch newCameraOutputMode {
         case .StillImage:
             if stillImageHandler == nil {
-                stillImageHandler = StillImage(library: library, albumTitle: albumTitle)
+                stillImageHandler = StillImage()
             }
             if let validStillImageOutput = stillImageHandler {
                 validStillImageOutput.getStillImageOutput(captureSession)
