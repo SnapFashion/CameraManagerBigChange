@@ -6,6 +6,20 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		634041251D4BBAD10018FDB9 /* CameraManagerUniversal */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 634041261D4BBAD10018FDB9 /* Build configuration list for PBXAggregateTarget "CameraManagerUniversal" */;
+			buildPhases = (
+				634041291D4BBAEC0018FDB9 /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = CameraManagerUniversal;
+			productName = CameraManagerUniversal;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		454C1F4719E82E2500C81915 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 454C1F4619E82E2500C81915 /* AppDelegate.swift */; };
 		454C1F4919E82E2500C81915 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 454C1F4819E82E2500C81915 /* ViewController.swift */; };
@@ -47,7 +61,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		454C1F4119E82E2500C81915 /* camera.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = camera.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		454C1F4119E82E2500C81915 /* CameraManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CameraManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		454C1F4519E82E2500C81915 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		454C1F4619E82E2500C81915 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		454C1F4819E82E2500C81915 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -95,7 +109,7 @@
 		454C1F4219E82E2500C81915 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				454C1F4119E82E2500C81915 /* camera.app */,
+				454C1F4119E82E2500C81915 /* CameraManager.app */,
 				D71DE8811AD677A7001E62F1 /* CameraManager.framework */,
 			);
 			name = Products;
@@ -182,7 +196,7 @@
 			);
 			name = camera;
 			productName = camera;
-			productReference = 454C1F4119E82E2500C81915 /* camera.app */;
+			productReference = 454C1F4119E82E2500C81915 /* CameraManager.app */;
 			productType = "com.apple.product-type.application";
 		};
 		D71DE8801AD677A7001E62F1 /* CameraManager */ = {
@@ -216,12 +230,15 @@
 					454C1F4019E82E2500C81915 = {
 						CreatedOnToolsVersion = 6.0.1;
 					};
+					634041251D4BBAD10018FDB9 = {
+						CreatedOnToolsVersion = 7.3.1;
+					};
 					D71DE8801AD677A7001E62F1 = {
 						CreatedOnToolsVersion = 6.3;
 					};
 				};
 			};
-			buildConfigurationList = 454C1F3C19E82E2500C81915 /* Build configuration list for PBXProject "camera" */;
+			buildConfigurationList = 454C1F3C19E82E2500C81915 /* Build configuration list for PBXProject "CameraManager" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -236,6 +253,7 @@
 			targets = (
 				454C1F4019E82E2500C81915 /* camera */,
 				D71DE8801AD677A7001E62F1 /* CameraManager */,
+				634041251D4BBAD10018FDB9 /* CameraManagerUniversal */,
 			);
 		};
 /* End PBXProject section */
@@ -259,6 +277,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		634041291D4BBAEC0018FDB9 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/sh\n\nUNIVERSAL_OUTPUTFOLDER=${BUILD_DIR}/${CONFIGURATION}-universal\n\n# make sure the output directory exists\nmkdir -p \"${UNIVERSAL_OUTPUTFOLDER}\"\n\n# Step 1. Build Device and Simulator versions\nxcodebuild -target \"${PROJECT_NAME}\" ONLY_ACTIVE_ARCH=NO -configuration ${CONFIGURATION} -sdk iphoneos  BUILD_DIR=\"${BUILD_DIR}\" BUILD_ROOT=\"${BUILD_ROOT}\" clean build\nxcodebuild -target \"${PROJECT_NAME}\" -configuration ${CONFIGURATION} -sdk iphonesimulator ONLY_ACTIVE_ARCH=NO BUILD_DIR=\"${BUILD_DIR}\" BUILD_ROOT=\"${BUILD_ROOT}\" clean build\n\n# Step 2. Copy the framework structure (from iphoneos build) to the universal folder\ncp -R \"${BUILD_DIR}/${CONFIGURATION}-iphoneos/${PROJECT_NAME}.framework\" \"${UNIVERSAL_OUTPUTFOLDER}/\"\n\n# Step 3. Copy Swift modules from iphonesimulator build (if it exists) to the copied framework directory\nSIMULATOR_SWIFT_MODULES_DIR=\"${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/${PROJECT_NAME}.framework/Modules/${PROJECT_NAME}.swiftmodule/.\"\nif [ -d \"${SIMULATOR_SWIFT_MODULES_DIR}\" ]; then\ncp -R \"${SIMULATOR_SWIFT_MODULES_DIR}\" \"${UNIVERSAL_OUTPUTFOLDER}/${PROJECT_NAME}.framework/Modules/${PROJECT_NAME}.swiftmodule\"\nfi\n\n# Step 4. Create universal binary file using lipo and place the combined executable in the copied framework directory\nlipo -create -output \"${UNIVERSAL_OUTPUTFOLDER}/${PROJECT_NAME}.framework/${PROJECT_NAME}\" \"${BUILD_DIR}/${CONFIGURATION}-iphonesimulator/${PROJECT_NAME}.framework/${PROJECT_NAME}\" \"${BUILD_DIR}/${CONFIGURATION}-iphoneos/${PROJECT_NAME}.framework/${PROJECT_NAME}\"\n\n# Step 5. Convenience step to copy the framework to the project's directory\ncp -R \"${UNIVERSAL_OUTPUTFOLDER}/${PROJECT_NAME}.framework\" \"${PROJECT_DIR}\"\n\n# Step 6. Convenience step to open the project's directory in Finder\nopen \"${PROJECT_DIR}\"";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		454C1F3D19E82E2500C81915 /* Sources */ = {
@@ -402,7 +436,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = cameraDemo;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = CameraManager;
 			};
 			name = Debug;
 		};
@@ -415,6 +449,20 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = cameraDemo;
+				PRODUCT_NAME = CameraManager;
+			};
+			name = Release;
+		};
+		634041271D4BBAD10018FDB9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		634041281D4BBAD10018FDB9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -474,7 +522,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		454C1F3C19E82E2500C81915 /* Build configuration list for PBXProject "camera" */ = {
+		454C1F3C19E82E2500C81915 /* Build configuration list for PBXProject "CameraManager" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				454C1F5E19E82E2500C81915 /* Debug */,
@@ -491,6 +539,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		634041261D4BBAD10018FDB9 /* Build configuration list for PBXAggregateTarget "CameraManagerUniversal" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				634041271D4BBAD10018FDB9 /* Debug */,
+				634041281D4BBAD10018FDB9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		D71DE89A1AD677A8001E62F1 /* Build configuration list for PBXNativeTarget "CameraManager" */ = {
 			isa = XCConfigurationList;

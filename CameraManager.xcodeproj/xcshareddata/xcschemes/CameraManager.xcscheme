@@ -17,27 +17,27 @@
                BlueprintIdentifier = "D71DE8801AD677A7001E62F1"
                BuildableName = "CameraManager.framework"
                BlueprintName = "CameraManager"
-               ReferencedContainer = "container:camera.xcodeproj">
+               ReferencedContainer = "container:CameraManager.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
+      buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "YES"
-      buildConfiguration = "Debug">
+      shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
       </Testables>
       <AdditionalOptions>
       </AdditionalOptions>
    </TestAction>
    <LaunchAction
+      buildConfiguration = "Release"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
-      buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
@@ -48,17 +48,17 @@
             BlueprintIdentifier = "D71DE8801AD677A7001E62F1"
             BuildableName = "CameraManager.framework"
             BlueprintName = "CameraManager"
-            ReferencedContainer = "container:camera.xcodeproj">
+            ReferencedContainer = "container:CameraManager.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
+      buildConfiguration = "Release"
       shouldUseLaunchSchemeArgsEnv = "YES"
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
-      buildConfiguration = "Release"
       debugDocumentVersioning = "YES">
       <MacroExpansion>
          <BuildableReference
@@ -66,7 +66,7 @@
             BlueprintIdentifier = "D71DE8801AD677A7001E62F1"
             BuildableName = "CameraManager.framework"
             BlueprintName = "CameraManager"
-            ReferencedContainer = "container:camera.xcodeproj">
+            ReferencedContainer = "container:CameraManager.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </ProfileAction>
