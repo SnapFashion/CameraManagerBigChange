@@ -38,7 +38,6 @@ class StillImage {
                 }
             let imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sample)
             imageCompletion(UIImage(data: imageData), error)
-            imageCompletion(UIImage(data: imageData), error)
         }
     }
 }
