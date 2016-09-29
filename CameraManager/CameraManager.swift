@@ -44,7 +44,7 @@ public class CameraManager {
     public var showAccessPermissionPopupAutomatically = true
     
     /// A closure creating UI to present error message to the user. This can be customised to be presented on the Window root view controller, or to pass in the viewController which will present the UIAlertController, for example.
-    public var showErrorBlock: ((erTitle: String, erMessage: String) -> Void)?
+    public var showErrorBlock: ((String, String) -> Void)?
 
     /// Property to determine if manager should write the resources to the phone library. Default value is true.
     public var writeFilesToPhoneLibrary = true
@@ -146,7 +146,7 @@ public class CameraManager {
 
     // MARK: - Private properties
     private weak var embeddingView: UIView?
-    private var videoCompletion: ((videoURL: NSURL?, error: NSError?) -> Void)?
+    private var videoCompletion: ((NSURL?, NSError?) -> Void)?
     private var withZoom = false
 
     private var sessionQueue = dispatch_queue_create("CameraSessionQueue", DISPATCH_QUEUE_SERIAL)
@@ -175,13 +175,13 @@ public class CameraManager {
     private var cameraIsObservingDeviceOrientation = false
 
     private var tempFilePath: NSURL = {
-        let tempPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).URLByAppendingPathComponent("tempMovie").URLByAppendingPathExtension("mp4").absoluteString
-        if NSFileManager.defaultManager().fileExistsAtPath(tempPath) {
+        let tempPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).URLByAppendingPathComponent("tempMovie")!.URLByAppendingPathExtension("mp4")!.absoluteString
+        if NSFileManager.defaultManager().fileExistsAtPath(tempPath!) {
             do {
-                try NSFileManager.defaultManager().removeItemAtPath(tempPath)
+                try NSFileManager.defaultManager().removeItemAtPath(tempPath!)
             } catch { }
         }
-        return NSURL(string: tempPath)!
+        return NSURL(string: tempPath!)!
     }()
 
     private var _canLoadCamera: Bool {
@@ -369,7 +369,7 @@ public class CameraManager {
     /**
     Stop recording a video. Save it to the cameraRoll and give back the url.
     */
-    public func stopRecordingVideo(completion:(videoURL: NSURL?, error: NSError?) -> Void) {
+    public func stopRecordingVideo(completion:(NSURL?, NSError?) -> Void) {
         _updateTorch(.Off)
         if let runningMovieOutput = videoHandler?.getMovieOutput(captureSession) {
             if runningMovieOutput.recording {
@@ -434,7 +434,7 @@ public class CameraManager {
     
     private func _executeVideoCompletionWithURL(url: NSURL?, error: NSError?) {
         if let validCompletion = videoCompletion {
-            validCompletion(videoURL: url, error: error)
+            validCompletion(url, error)
             videoCompletion = nil
         }
     }
@@ -447,7 +447,7 @@ public class CameraManager {
     @objc
     private func _zoom(recognizer: UIPinchGestureRecognizer) {
         guard let view = embeddingView,
-          previewLayer = previewLayer
+          let previewLayer = previewLayer
           else { return }
 
         var allTouchesOnPreviewLayer = true
@@ -742,9 +742,9 @@ public class CameraManager {
     }
     
     private func _show(title: String, message: String) {
-        if let errorBlock = showErrorBlock where showErrorsToUsers {
+        if let errorBlock = showErrorBlock {
             dispatch_async(dispatch_get_main_queue(), { () -> Void in
-                errorBlock(erTitle: title, erMessage: message)
+                errorBlock(title, message)
             })
         }
     }
